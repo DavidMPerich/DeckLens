@@ -1,5 +1,6 @@
 ﻿using DeckLens.API.Models.DTO;
 using DeckLens.API.Services.Interface;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 
 namespace DeckLens.API.Services.Implementation
@@ -7,14 +8,25 @@ namespace DeckLens.API.Services.Implementation
     public class CardService : ICardService
     {
         private readonly HttpClient _httpClient;
+        private readonly IDistributedCache _cache;
 
-        public CardService(HttpClient httpClient)
+        public CardService(HttpClient httpClient, IDistributedCache cache)
         {
             this._httpClient = httpClient;
+            _cache = cache;
         }
 
         public async Task<CardDto?> GetByNameAsync(string name)
         {
+            var normalized = name.Trim().ToLowerInvariant();
+            var cacheKey = $"card:named:{normalized}";
+
+            var cached = await _cache.GetStringAsync(cacheKey);
+            if (cached != null)
+            {
+                return JsonSerializer.Deserialize<CardDto>(cached);
+            }
+
             var encodedName = Uri.EscapeDataString(name ?? "");
             var card = await _httpClient.GetAsync($"/cards/named?exact={encodedName}");
 
@@ -42,6 +54,15 @@ namespace DeckLens.API.Services.Implementation
                 Rarity = root.GetProperty("rarity").GetString()!,
                 EDHRecRank = root.GetProperty("edhrec_rank").GetInt32()!,
             };
+
+            var serialized = JsonSerializer.Serialize(response);
+            await _cache.SetStringAsync(
+                cacheKey,
+                serialized,
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7)
+                });
 
             return response;
         }

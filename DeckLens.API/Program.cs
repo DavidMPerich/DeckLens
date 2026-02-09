@@ -17,6 +17,12 @@ builder.Services.AddHttpClient<ICardService, CardService>(client =>
     client.DefaultRequestHeaders.Add("User-Agent", "DeckLens/1.0");
 });
 
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = "localhost:6379";
+    options.InstanceName = "DeckLens:";
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
