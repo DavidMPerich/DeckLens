@@ -33,6 +33,7 @@ namespace DeckLens.API.Services.Implementation
                 ManaCost = root.GetProperty("mana_cost").GetString()!,
                 TypeLine = root.GetProperty("type_line").GetString()!,
                 OracleText = root.GetProperty("oracle_text").GetString()!,
+                Keywords = root.TryGetProperty("keywords", out var keywordsElement) ? keywordsElement.EnumerateArray().Select(k => k.GetString()!).ToList() : new List<string>()
             };
 
             return response;
