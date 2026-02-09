@@ -31,9 +31,16 @@ namespace DeckLens.API.Services.Implementation
             {
                 CardName = root.GetProperty("name").GetString()!,
                 ManaCost = root.GetProperty("mana_cost").GetString()!,
+                ConvertedManaCost = root.GetProperty("cmc").GetDouble()!,
                 TypeLine = root.GetProperty("type_line").GetString()!,
                 OracleText = root.GetProperty("oracle_text").GetString()!,
-                Keywords = root.TryGetProperty("keywords", out var keywordsElement) ? keywordsElement.EnumerateArray().Select(k => k.GetString()!).ToList() : new List<string>()
+                Power = root.GetProperty("power").GetString()!,
+                Toughness = root.GetProperty("toughness").GetString()!,
+                Colors = root.TryGetProperty("colors", out var colorsElement) ? colorsElement.EnumerateArray().Select(k => k.GetString()!).ToList() : new List<string>(),
+                ColorIdentity = root.TryGetProperty("color_identity", out var colorIdentityElement) ? colorIdentityElement.EnumerateArray().Select(k => k.GetString()!).ToList() : new List<string>(),
+                Keywords = root.TryGetProperty("keywords", out var keywordsElement) ? keywordsElement.EnumerateArray().Select(k => k.GetString()!).ToList() : new List<string>(),
+                Rarity = root.GetProperty("rarity").GetString()!,
+                EDHRecRank = root.GetProperty("edhrec_rank").GetInt32()!,
             };
 
             return response;
