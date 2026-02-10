@@ -35,7 +35,17 @@ namespace DeckLens.API.Services.Implementation
             for (int i = 0; i < cards.Count; i++)
             {
                 cards[i] = cards[i].Split("(")[0].Trim();
-                cards[i] = cards[i].Split(" ", 2)[1].Trim();
+                var quantity = int.Parse(cards[i].Split(" ")[0].Trim());
+                var name = cards[i].Split(" ", 2)[1].Trim();
+                if (quantity > 1)
+                {
+                    cards.RemoveAt(i);
+                    for (int j = 0; j < quantity; j++)
+                    {
+                        cards.Insert(i, $"1 {name}");
+                    }
+                }
+                cards[i] = name;
             }
 
             foreach (var card in cards)
