@@ -1,6 +1,7 @@
 ﻿using DeckLens.API.Models.DTO;
 using DeckLens.API.Services.Interface;
 using Microsoft.Extensions.Caching.Distributed;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace DeckLens.API.Services.Implementation
@@ -9,11 +10,39 @@ namespace DeckLens.API.Services.Implementation
     {
         private readonly HttpClient _httpClient;
         private readonly IDistributedCache _cache;
+        private readonly IWebHostEnvironment _env;
 
-        public CardService(HttpClient httpClient, IDistributedCache cache)
+        public CardService(HttpClient httpClient, IDistributedCache cache, IWebHostEnvironment env)
         {
             this._httpClient = httpClient;
             _cache = cache;
+            _env = env;
+        }
+
+        public async Task<DeckMetricsDto?> GetDeckMetrics(string deck)
+        {
+            var path = Path.Combine(_env.ContentRootPath, "Data", "deck.txt");
+            var lines = await File.ReadAllLinesAsync(path);
+
+            var cards = lines.ToList();
+
+            //Format List
+            cards.RemoveAt(3);
+            cards.RemoveAt(2);
+            cards.RemoveAt(0);
+            
+            for (int i = 0; i < cards.Count; i++)
+            {
+                cards[i] = cards[i].Split("(")[0].Trim();
+                cards[i] = cards[i].Split(" ", 2)[1].Trim();
+            }
+
+            foreach (var card in cards)
+            {
+                Console.WriteLine(card);
+            }
+
+            return new DeckMetricsDto();
         }
 
         public async Task<CardDto?> GetByNameAsync(string name)
