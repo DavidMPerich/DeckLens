@@ -1,4 +1,5 @@
-﻿using DeckLens.API.Models.DTO;
+﻿using DeckLens.API.Mappers;
+using DeckLens.API.Models.DTO;
 using DeckLens.API.Services.Interface;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Runtime.CompilerServices;
@@ -68,21 +69,7 @@ namespace DeckLens.API.Services.Implementation
             using var doc = JsonDocument.Parse(content);
             var root = doc.RootElement;
 
-            var response = new CardDto
-            {
-                CardName = root.GetProperty("name").GetString()!,
-                ManaCost = root.GetProperty("mana_cost").GetString()!,
-                ConvertedManaCost = root.GetProperty("cmc").GetDouble()!,
-                TypeLine = root.GetProperty("type_line").GetString()!,
-                OracleText = root.GetProperty("oracle_text").GetString()!,
-                Power = root.GetProperty("power").GetString()!,
-                Toughness = root.GetProperty("toughness").GetString()!,
-                Colors = root.TryGetProperty("colors", out var colorsElement) ? colorsElement.EnumerateArray().Select(k => k.GetString()!).ToList() : new List<string>(),
-                ColorIdentity = root.TryGetProperty("color_identity", out var colorIdentityElement) ? colorIdentityElement.EnumerateArray().Select(k => k.GetString()!).ToList() : new List<string>(),
-                Keywords = root.TryGetProperty("keywords", out var keywordsElement) ? keywordsElement.EnumerateArray().Select(k => k.GetString()!).ToList() : new List<string>(),
-                Rarity = root.GetProperty("rarity").GetString()!,
-                EDHRecRank = root.GetProperty("edhrec_rank").GetInt32()!,
-            };
+            var response = ScryfallCardMapper.Map(root);
 
             var serialized = JsonSerializer.Serialize(response);
             await _cache.SetStringAsync(
