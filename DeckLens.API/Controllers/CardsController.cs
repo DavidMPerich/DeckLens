@@ -9,9 +9,9 @@ namespace DeckLens.API.Controllers
     [ApiController]
     public class CardsController : ControllerBase
     {
-        private readonly ICardService _cardService;
+        private readonly IScryfallService _cardService;
 
-        public CardsController(ICardService cardService)
+        public CardsController(IScryfallService cardService)
         {
             _cardService = cardService;
         }
@@ -19,7 +19,7 @@ namespace DeckLens.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetByName(string name)
         {
-            var response = await _cardService.GetByNameAsync(name);
+            var response = await _cardService.GetCardByNameAsync(name);
 
             if (response == null)
             {

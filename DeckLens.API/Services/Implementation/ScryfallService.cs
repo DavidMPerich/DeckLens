@@ -7,84 +7,50 @@ using System.Text.Json;
 
 namespace DeckLens.API.Services.Implementation
 {
-    public class CardService : ICardService
+    public class ScryfallService : IScryfallService
     {
         private readonly HttpClient _httpClient;
         private readonly IDistributedCache _cache;
-        private readonly IWebHostEnvironment _env;
+        
 
-        public CardService(HttpClient httpClient, IDistributedCache cache, IWebHostEnvironment env)
+        public ScryfallService(HttpClient httpClient, IDistributedCache cache)
         {
             this._httpClient = httpClient;
             _cache = cache;
-            _env = env;
         }
 
-        public async Task<List<CardDto>> GetDeckMetrics(string deck)
+        public async Task<CardDto?> GetCardByNameAsync(string name)
         {
-            var path = Path.Combine(_env.ContentRootPath, "Data", "deck.txt");
-            var lines = await File.ReadAllLinesAsync(path);
-
-            var cards = lines.ToList();
-
-            //Format List
-            cards.RemoveAt(3);
-            cards.RemoveAt(2);
-            cards.RemoveAt(0);
-            for (int i = 0; i < cards.Count; i++)
-            {
-                cards[i] = cards[i].Split("(")[0].Trim();
-                var quantity = int.Parse(cards[i].Split(" ")[0].Trim());
-                var name = cards[i].Split(" ", 2)[1].Trim();
-                if (quantity > 1)
-                {
-                    cards.RemoveAt(i);
-                    for (int j = 0; j < quantity; j++)
-                    {
-                        cards.Insert(i, $"1 {name}");
-                    }
-                }
-                cards[i] = name;
-            }
-
-            //Compile Deck
-            List<CardDto> compiledDeck = new List<CardDto>();
-
-            foreach (var card in cards)
-            {
-                compiledDeck.Add(await GetByNameAsync(card));
-            }
-
-            //Get Metrics
-
-            return compiledDeck;
-        }
-
-        public async Task<CardDto?> GetByNameAsync(string name)
-        {
+            //Create Redis Key
             var normalized = name.Trim().ToLowerInvariant();
             var cacheKey = $"card:named:{normalized}";
 
+            //Check Cache
             var cached = await _cache.GetStringAsync(cacheKey);
             if (cached != null)
             {
                 return JsonSerializer.Deserialize<CardDto>(cached);
             }
 
+            //Send Request To Scryfall API
             var encodedName = Uri.EscapeDataString(name ?? "");
             var card = await _httpClient.GetAsync($"/cards/named?exact={encodedName}");
 
+            //Check Status
             if (!card.IsSuccessStatusCode)
             {
                 return null;
             }
 
+            //Parse Response
             var content = await card.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(content);
             var root = doc.RootElement;
 
+            //Map Response To DTO
             var response = ScryfallCardMapper.Map(root);
 
+            //Cache
             var serialized = JsonSerializer.Serialize(response);
             await _cache.SetStringAsync(
                 cacheKey,

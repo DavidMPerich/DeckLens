@@ -1,6 +1,6 @@
 ﻿namespace DeckLens.API.Models.DTO
 {
-    public class DeckMetricsDto
+    public class DeckAnalysisDto
     {
     }
 }

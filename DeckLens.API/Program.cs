@@ -9,9 +9,11 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<ICardService, CardService>();
+builder.Services.AddScoped<IDeckAnalysisService, DeckAnalysisService>();
+builder.Services.AddScoped<IDeckImportService, DeckImportService>();
+builder.Services.AddScoped<IScryfallService, ScryfallService>();
 
-builder.Services.AddHttpClient<ICardService, CardService>(client =>
+builder.Services.AddHttpClient<IScryfallService, ScryfallService>(client =>
 {
     client.BaseAddress = new Uri("https://api.scryfall.com");
     client.DefaultRequestHeaders.Add("User-Agent", "DeckLens/1.0");
