@@ -20,7 +20,7 @@ namespace DeckLens.API.Services.Implementation
             _env = env;
         }
 
-        public async Task<DeckMetricsDto?> GetDeckMetrics(string deck)
+        public async Task<List<CardDto>> GetDeckMetrics(string deck)
         {
             var path = Path.Combine(_env.ContentRootPath, "Data", "deck.txt");
             var lines = await File.ReadAllLinesAsync(path);
@@ -31,7 +31,6 @@ namespace DeckLens.API.Services.Implementation
             cards.RemoveAt(3);
             cards.RemoveAt(2);
             cards.RemoveAt(0);
-            
             for (int i = 0; i < cards.Count; i++)
             {
                 cards[i] = cards[i].Split("(")[0].Trim();
@@ -48,12 +47,17 @@ namespace DeckLens.API.Services.Implementation
                 cards[i] = name;
             }
 
+            //Compile Deck
+            List<CardDto> compiledDeck = new List<CardDto>();
+
             foreach (var card in cards)
             {
-                Console.WriteLine(card);
+                compiledDeck.Add(await GetByNameAsync(card));
             }
 
-            return new DeckMetricsDto();
+            //Get Metrics
+
+            return compiledDeck;
         }
 
         public async Task<CardDto?> GetByNameAsync(string name)
