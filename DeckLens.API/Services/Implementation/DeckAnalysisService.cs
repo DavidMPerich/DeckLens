@@ -20,6 +20,7 @@ namespace DeckLens.API.Services.Implementation
         public async Task<DeckAnalysisDto> AnalyzeAsync(List<string> cardNames)
         {
             //FUTURE: Implmement Hybrid approach to scryfall service (get collection on missed requests)
+
             var tasks = cardNames.Select(async name =>
             {
                 await _semaphore.WaitAsync();
