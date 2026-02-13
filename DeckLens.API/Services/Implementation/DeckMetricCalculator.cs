@@ -27,7 +27,7 @@ namespace DeckLens.API.Services.Implementation
                 .Select(c => c.ConvertedManaCost!.Value);
 
             var average = cmcList.DefaultIfEmpty(0).Average();
-            return Math.Round(average, 2);
+            return Math.Round(average, 1);
         }
 
         private Dictionary<int, int> BuildManaCurve(List<CardDto> cards) 
@@ -42,9 +42,16 @@ namespace DeckLens.API.Services.Implementation
         {
             var result = new Dictionary<string, int>();
 
-            foreach (var card in cards)
+            for (int i = 1; i < cards.Count; i++)
             {
-                foreach (var color in card.ColorIdentity)
+                var card = cards[i];
+
+                if (card.TypeLine.Contains("Land"))
+                {
+                    continue;
+                }
+
+                foreach (var color in card.Colors)
                 {
                     if (!result.ContainsKey(color))
                         result[color] = 0;
