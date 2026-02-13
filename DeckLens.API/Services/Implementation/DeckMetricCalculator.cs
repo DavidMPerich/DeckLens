@@ -11,6 +11,7 @@ namespace DeckLens.API.Services.Implementation
             var dto = new DeckAnalysisDto();
 
             dto.Commander = cards[0];
+            cards.RemoveAt(0);
             dto.TotalCards = cards.Count;
             dto.AverageCmc = CalculateAverageCmc(cards);
             dto.ManaCurve = BuildManaCurve(cards);
@@ -42,10 +43,8 @@ namespace DeckLens.API.Services.Implementation
         {
             var result = new Dictionary<string, int>();
 
-            for (int i = 1; i < cards.Count; i++)
+            foreach (var card in cards) 
             {
-                var card = cards[i];
-
                 if (card.TypeLine.Contains("Land"))
                 {
                     continue;
