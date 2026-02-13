@@ -33,7 +33,7 @@ namespace DeckLens.API.Services.Implementation
         private Dictionary<int, int> BuildManaCurve(List<CardDto> cards) 
         {
             return cards
-                .Where(c => c.ConvertedManaCost.HasValue)
+                .Where(c => c.ConvertedManaCost.HasValue && !c.TypeLine.Contains("Land"))
                 .GroupBy(c => (int)Math.Floor(c.ConvertedManaCost!.Value))
                 .ToDictionary(g => g.Key, g => g.Count());
         }
