@@ -7,41 +7,71 @@ namespace DeckLens.API.Services.Implementation
     {
         private readonly IScryfallService _scryfallService;
         private readonly IDeckMetricCalculator _metrics;
+        private readonly ILogger<DeckAnalysisService> _logger;
+        private readonly SemaphoreSlim _semaphore = new(10);
 
-        public DeckAnalysisService(IScryfallService scryfallService, IDeckMetricCalculator metrics)
+        public DeckAnalysisService(IScryfallService scryfallService, IDeckMetricCalculator metrics, ILogger<DeckAnalysisService> logger)
         {
             _scryfallService = scryfallService;
             _metrics = metrics;
+            _logger = logger;
         }
 
         public async Task<DeckAnalysisDto> AnalyzeAsync(List<string> cardNames)
         {
-            var cards = new List<CardDto>();
-
-            foreach (var name in cardNames)
+            //FUTURE: Implmement Hybrid approach to scryfall service (get collection on missed requests)
+            var tasks = cardNames.Select(async name =>
             {
-                var card = await _scryfallService.GetCardByNameAsync(name);
-                if (card != null)
+                await _semaphore.WaitAsync();
+                try
                 {
-                    cards.Add(card);
+                    return await _scryfallService.GetCardByNameAsync(name);
                 }
-            }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, $"Failed to fetch card {name}");
+                    return null;
+                }
+                finally
+                {
+                    _semaphore.Release();
+                }
+            });
+                
+            var results = await Task.WhenAll(tasks);
+
+            var cards = results
+                .Where(c =>  c != null)
+                .ToList();
 
             return _metrics.Build(cards);
         }
 
         public async Task<List<CardDto>> VerifyAsync(List<string> cardNames)
         {
-            var cards = new List<CardDto>();
-
-            foreach (var name in cardNames)
+            var tasks = cardNames.Select(async name =>
             {
-                var card = await _scryfallService.GetCardByNameAsync(name);
-                if (card != null)
+                await _semaphore.WaitAsync();
+                try
                 {
-                    cards.Add(card);
+                    return await _scryfallService.GetCardByNameAsync(name);
                 }
-            }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, $"Failed to fetch card {name}");
+                    return null;
+                }
+                finally
+                {
+                    _semaphore.Release();
+                }
+            });
+
+            var results = await Task.WhenAll(tasks);
+
+            var cards = results
+                .Where(c => c != null)
+                .ToList();
 
             return cards;
         }

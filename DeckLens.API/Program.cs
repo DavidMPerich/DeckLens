@@ -12,6 +12,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IDeckAnalysisService, DeckAnalysisService>();
 builder.Services.AddScoped<IDeckImportService, DeckImportService>();
 builder.Services.AddScoped<IScryfallService, ScryfallService>();
+builder.Services.AddScoped<IDeckMetricCalculator, DeckMetricCalculator>();
 
 builder.Services.AddHttpClient<IScryfallService, ScryfallService>(client =>
 {
