@@ -23,7 +23,7 @@ namespace DeckLens.API.Services.Implementation
         private double CalculateAverageCmc(List<CardDto> cards) 
         {
             var cmcList = cards
-                .Where(c => c.ConvertedManaCost.HasValue)
+                .Where(c => c.ConvertedManaCost.HasValue && !c.TypeLine.Contains("Land"))
                 .Select(c => c.ConvertedManaCost!.Value);
 
             var average = cmcList.DefaultIfEmpty(0).Average();
