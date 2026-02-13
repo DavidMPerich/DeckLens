@@ -1,5 +1,6 @@
 ﻿using DeckLens.API.Models.DTO;
 using DeckLens.API.Services.Interface;
+using System.Drawing;
 using System.Reflection.Metadata.Ecma335;
 
 namespace DeckLens.API.Services.Implementation
@@ -49,14 +50,23 @@ namespace DeckLens.API.Services.Implementation
                 {
                     continue;
                 }
-
-                foreach (var color in card.Colors)
+                else if (card.Colors.Count == 0)
                 {
-                    if (!result.ContainsKey(color))
-                        result[color] = 0;
+                    if (!result.ContainsKey("C"))
+                        result["C"] = 0;
 
-                    result[color]++;
+                    result["C"]++;
                 }
+                else
+                {
+                    foreach (var color in card.Colors)
+                    {
+                        if (!result.ContainsKey(color))
+                            result[color] = 0;
+
+                        result[color]++;
+                    }
+                }  
             }
 
             return result;
