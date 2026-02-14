@@ -9,6 +9,7 @@ namespace DeckLens.API.Mappers
         {
             return new CardDto
             {
+                //TODO: Handle Double-Sided Cards
                 CardName = GetStringOrNull(root, "name")!,
                 ManaCost = GetStringOrNull(root, "mana_cost"),
                 ConvertedManaCost = GetDoubleOrNull(root, "cmc"),
@@ -23,7 +24,9 @@ namespace DeckLens.API.Mappers
                 Keywords = GetStringList(root, "keywords"),
 
                 Rarity = GetStringOrNull(root, "rarity"),
-                EDHRecRank = GetIntOrNull(root, "edhrec_rank")
+                EDHRecRank = GetIntOrNull(root, "edhrec_rank"),
+
+                ImageUri = ScryfallImageResolver.GetNormalImageUri(root)
             };
         }
 

@@ -2,6 +2,7 @@
 {
     public class CardDto
     {
+        //TODO: Determine what should be nullable
         public string CardName { get; set; }
         public string ManaCost { get; set; }
         public double? ConvertedManaCost { get; set; }
@@ -14,6 +15,7 @@
         public List<string> Keywords { get; set; } = new();
         public string Rarity { get; set; }
         public int? EDHRecRank { get; set; }
+        public string? ImageUri { get; set; }
 
     }
 }
