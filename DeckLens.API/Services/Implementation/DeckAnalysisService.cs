@@ -50,29 +50,18 @@ namespace DeckLens.API.Services.Implementation
 
         public async Task<List<CardDto>> VerifyAsync(List<string> cardNames)
         {
-            var tasks = cardNames.Select(async name =>
+            var (cards, notFound) = await _scryfallService.GetCardCollectionAsync(
+                cardNames,
+                TimeSpan.FromDays(7)
+            );
+
+            if (notFound.Count > 0)
             {
-                await _semaphore.WaitAsync();
-                try
+                foreach (var name in notFound)
                 {
-                    return await _scryfallService.GetCardByNameAsync(name);
+                    _logger.LogWarning("Card not found: {CardName}", name);
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, $"Failed to fetch card {name}");
-                    return null;
-                }
-                finally
-                {
-                    _semaphore.Release();
-                }
-            });
-
-            var results = await Task.WhenAll(tasks);
-
-            var cards = results
-                .Where(c => c != null)
-                .ToList();
+            }
 
             return cards;
         }
