@@ -1,4 +1,5 @@
-﻿using DeckLens.API.Services.Implementation;
+﻿using DeckLens.API.Models.DTO;
+using DeckLens.API.Services.Implementation;
 using DeckLens.API.Services.Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,7 +18,8 @@ namespace DeckLens.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetByName(string name)
+        [Route("{name}")]
+        public async Task<ActionResult<CardDto>> GetByName(string name)
         {
             var response = await _cardService.GetCardByNameAsync(name);
 

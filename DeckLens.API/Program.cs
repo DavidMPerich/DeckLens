@@ -14,6 +14,8 @@ builder.Services.AddScoped<IDeckImportService, DeckImportService>();
 builder.Services.AddScoped<IScryfallService, ScryfallService>();
 builder.Services.AddScoped<IDeckMetricCalculator, DeckMetricCalculator>();
 
+builder.Services.AddCors();
+
 builder.Services.AddHttpClient<IScryfallService, ScryfallService>(client =>
 {
     client.BaseAddress = new Uri("https://api.scryfall.com");
@@ -27,6 +29,12 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 var app = builder.Build();
+
+app.UseCors(options => options
+    .AllowAnyHeader()
+    .AllowAnyMethod()
+    .WithOrigins("http://localhost:4200", "https://localhost:4200")
+    );
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
