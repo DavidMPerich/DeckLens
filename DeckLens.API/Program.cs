@@ -20,6 +20,7 @@ builder.Services.AddHttpClient<IScryfallService, ScryfallService>(client =>
 {
     client.BaseAddress = new Uri("https://api.scryfall.com");
     client.DefaultRequestHeaders.Add("User-Agent", "DeckLens/1.0");
+    client.DefaultRequestHeaders.Accept.Add( new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json") );
 });
 
 builder.Services.AddStackExchangeRedisCache(options =>

@@ -11,13 +11,15 @@ namespace DeckLens.API.Services.Implementation
     {
         private readonly HttpClient _httpClient;
         private readonly IDistributedCache _cache;
+        private readonly ILogger<ScryfallService> _logger;
         private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
         
 
-        public ScryfallService(HttpClient httpClient, IDistributedCache cache)
+        public ScryfallService(HttpClient httpClient, IDistributedCache cache, ILogger<ScryfallService> logger)
         {
             this._httpClient = httpClient;
             _cache = cache;
+            _logger = logger;
         }
 
         public async Task<(List<CardDto> Cards, List<string> NotFound)> GetCardCollectionAsync(IEnumerable<string> names, TimeSpan ttl)
@@ -73,6 +75,15 @@ namespace DeckLens.API.Services.Implementation
                 using var response = await _httpClient.PostAsJsonAsync("/cards/collection", payload);
                 if (!response.IsSuccessStatusCode)
                 {
+                    //_logger.LogWarning($"Scryfall collection failed ({response.StatusCode}): {response.Content.ReadAsStringAsync()}");
+                    //_logger.LogWarning($"Scryfall payload: {JsonSerializer.Serialize(payload)}");
+                    var errorBody = await response.Content.ReadAsStringAsync();
+
+                    _logger.LogWarning(
+                        "Scryfall error ({StatusCode}): {ErrorBody}",
+                        (int)response.StatusCode,
+                        errorBody
+                    );
                     notFound.AddRange(batch.Select(b => b.Original));
                     continue;
                 }

@@ -19,31 +19,18 @@ namespace DeckLens.API.Services.Implementation
 
         public async Task<DeckAnalysisDto> AnalyzeAsync(List<string> cardNames)
         {
-            //TODO: Implmement Hybrid approach to scryfall service (get collection on missed requests)
+            var (cards, notFound) = await _scryfallService.GetCardCollectionAsync(
+                cardNames,
+                TimeSpan.FromDays(7)
+            );
 
-            var tasks = cardNames.Select(async name =>
+            if (notFound.Count > 0)
             {
-                await _semaphore.WaitAsync();
-                try
+                foreach (var name in notFound)
                 {
-                    return await _scryfallService.GetCardByNameAsync(name);
+                    _logger.LogWarning("Card not found: {CardName}", name);
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, $"Failed to fetch card {name}");
-                    return null;
-                }
-                finally
-                {
-                    _semaphore.Release();
-                }
-            });
-                
-            var results = await Task.WhenAll(tasks);
-
-            var cards = results
-                .Where(c =>  c != null)
-                .ToList();
+            }
 
             return _metrics.Build(cards);
         }
@@ -59,7 +46,7 @@ namespace DeckLens.API.Services.Implementation
             {
                 foreach (var name in notFound)
                 {
-                    _logger.LogWarning("Card not found: {CardName}", name);
+                    //_logger.LogWarning("Card not found: {CardName}", name);
                 }
             }
 

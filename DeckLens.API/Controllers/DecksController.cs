@@ -23,11 +23,6 @@ namespace DeckLens.API.Controllers
         [HttpPost("analyze")]
         public async Task<ActionResult<DeckAnalysisDto>> AnalyzeDeck([FromBody] DeckImportRequestDto request)
         {
-            //Test Data
-            var path = Path.Combine(_env.ContentRootPath, "Data", "deck.txt");
-            var text = await System.IO.File.ReadAllTextAsync(path);
-            request.CardNames = text;
-
             var cardNames = _deckImportService.Parse(request.CardNames);
 
             var response = await _deckAnalysisService.AnalyzeAsync(cardNames);
