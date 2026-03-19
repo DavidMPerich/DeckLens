@@ -14,10 +14,11 @@ namespace DeckLens.API.Services.Implementation
             dto.Commander = cards[0];
             cards.RemoveAt(0);
             dto.TotalCards = cards.Count;
-            dto.AverageCmc = CalculateAverageCmc(cards);
-            dto.ManaCurve = BuildManaCurve(cards);
-            dto.ColorDistribution = BuildColorDistribution(cards);
-            dto.CardTypeBreakdown = BuildTypeBreakdown(cards);
+            dto.Summary.ManaCurvePreview = BuildManaCurve(cards);
+
+
+            dto.ManaCurveAnalysis.AverageCmc = CalculateAverageCmc(cards);
+            dto.ManaCurveAnalysis.ByCmc = BuildManaCurve(cards);
 
             return dto;
         }
