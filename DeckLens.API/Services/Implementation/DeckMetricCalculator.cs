@@ -41,6 +41,67 @@ namespace DeckLens.API.Services.Implementation
                 .ToDictionary(g => g.Key, g => g.Count());
         }
 
+        private ManaCurveChartDto BuildManaCurveBreakdown(List<CardDto> cards, Func<CardDto, string> bucketSelector)
+        {
+            var filteredCards = cards
+                .Where(c => c.ConvertedManaCost.HasValue && !c.TypeLine.Contains("Land"))
+                .ToList();
+
+            var cmcCategories = filteredCards
+                .Select(c => (int)Math.Floor(c.ConvertedManaCost!.Value))
+                .Distinct()
+                .OrderBy(cmc => cmc)
+                .ToList();
+
+            var bucketNames = filteredCards
+                .Select(bucketSelector)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+            var series = bucketNames
+                .Select(bucket => new StackedSeriesDto
+                {
+                    Name = bucket,
+                    Data = cmcCategories
+                        .Select(cmc => filteredCards.Count(c =>
+                            (int)Math.Floor(c.ConvertedManaCost!.Value) == cmc &&
+                            bucketSelector(c) == bucket))
+                        .ToList()
+                })
+                .ToList();
+
+            return new ManaCurveChartDto
+            {
+                Categories = cmcCategories,
+                Series = series
+            };
+        }
+
+        private ManaCurveChartDto BuildManaCurveByColor(List<CardDto> cards)
+        {
+            return BuildManaCurveBreakdown(cards, GetColorBucket);
+        }
+
+        private string GetColorBucket(CardDto card)
+        {
+            if (card.Colors == null || !card.Colors.Any())
+                return "Colorless";
+
+            if (card.Colors.Count > 1)
+                return "Multicolor";
+
+            return card.Colors[0] switch
+            {
+                "W" => "White",
+                "U" => "Blue",
+                "B" => "Black",
+                "R" => "Red",
+                "G" => "Green",
+                _ => "Colorless"
+            };
+        }
+
         private Dictionary<string, int> BuildColorDistribution(List<CardDto> cards)
         {
             var result = new Dictionary<string, int>();

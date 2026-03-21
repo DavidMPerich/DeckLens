@@ -2,12 +2,8 @@
 {
     public class ManaCurveAnalysisDto
     {
-        //Metrics
-        public double AverageCmc { get; set; }
+        public ManaCurveMetricsDto Metrics { get; set; } = new();
+        public ManaCurveChartBreakdownsDto Charts { get; set; } = new();
 
-        //Chart Distribution Types
-        public Dictionary<int, int> ByCmc { get; set; } = new();
-
-        //Insights
     }
 }
