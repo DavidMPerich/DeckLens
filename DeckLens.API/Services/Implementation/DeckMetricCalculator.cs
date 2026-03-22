@@ -9,16 +9,33 @@ namespace DeckLens.API.Services.Implementation
     {
         public DeckAnalysisDto Build(List<CardDto> cards)
         {
+            if (cards == null || !cards.Any())
+            {
+                return new DeckAnalysisDto();
+            }
+
             var dto = new DeckAnalysisDto();
 
-            dto.Commander = cards[0];
+            //Summary
+            dto.Summary.Commander = cards[0];
             cards.RemoveAt(0);
-            dto.TotalCards = cards.Count;
-            dto.Summary.ManaCurvePreview = BuildManaCurve(cards);
+            dto.Summary.TotalCards = cards.Count;
+            //dto.Summary.ManaCurvePreview = 
 
+            /*****MANA CURVE*****/
+            //Metrics
+            dto.ManaCurveAnalysis.Metrics.AverageCmc = CalculateAverageCmc(cards);
+            //dto.ManaCurveAnalysis.Metrics.MedianCmc = 
+            //dto.ManaCurveAnalysis.Metrics.CurvePeak =
+            //dto.ManaCurveAnalysis.Metrics.EarlyGameDensity =
 
-            dto.ManaCurveAnalysis.AverageCmc = CalculateAverageCmc(cards);
-            dto.ManaCurveAnalysis.ByCmc = BuildManaCurve(cards);
+            //Chart Distributions
+            dto.ManaCurveAnalysis.Charts.ByCmc = BuildManaCurveByCmc(cards);
+            dto.ManaCurveAnalysis.Charts.ByColor = BuildManaCurveByColor(cards);
+            dto.ManaCurveAnalysis.Charts.ByType = BuildManaCurveByType(cards);
+            dto.ManaCurveAnalysis.Charts.ByCreatureSplit = BuildManaCurveByCreatureSplit(cards);
+
+            //Insights
 
             return dto;
         }
@@ -31,14 +48,6 @@ namespace DeckLens.API.Services.Implementation
 
             var average = cmcList.DefaultIfEmpty(0).Average();
             return Math.Round(average, 1);
-        }
-
-        private Dictionary<int, int> BuildManaCurve(List<CardDto> cards) 
-        {
-            return cards
-                .Where(c => c.ConvertedManaCost.HasValue && !c.TypeLine.Contains("Land"))
-                .GroupBy(c => (int)Math.Floor(c.ConvertedManaCost!.Value))
-                .ToDictionary(g => g.Key, g => g.Count());
         }
 
         private ManaCurveChartDto BuildManaCurveBreakdown(List<CardDto> cards, Func<CardDto, string> bucketSelector)
@@ -102,72 +111,59 @@ namespace DeckLens.API.Services.Implementation
             };
         }
 
-        private Dictionary<string, int> BuildColorDistribution(List<CardDto> cards)
+        private ManaCurveChartDto BuildManaCurveByType(List<CardDto> cards)
         {
-            var result = new Dictionary<string, int>();
-
-            foreach (var card in cards) 
-            {
-                if (card.TypeLine.Contains("Land"))
-                {
-                    continue;
-                }
-                else if (card.Colors.Count == 0)
-                {
-                    if (!result.ContainsKey("C"))
-                        result["C"] = 0;
-
-                    result["C"]++;
-                }
-                else
-                {
-                    foreach (var color in card.Colors)
-                    {
-                        if (!result.ContainsKey(color))
-                            result[color] = 0;
-
-                        result[color]++;
-                    }
-                }  
-            }
-
-            return result;
+            return BuildManaCurveBreakdown(cards, GetPrimaryTypeBucket);
         }
 
-        private Dictionary<string, int> BuildTypeBreakdown(List<CardDto> cards)
+        private string GetPrimaryTypeBucket(CardDto card)
         {
-            var types = new Dictionary<string, int>();
+            var typeLine = card.TypeLine;
 
-            foreach (var card in cards)
-            {
-                if (card.TypeLine.Contains("Creature"))
-                    Increment(types, "Creature");
+            if (typeLine.Contains("Creature")) return "Creature";
+            if (typeLine.Contains("Instant")) return "Instant";
+            if (typeLine.Contains("Sorcery")) return "Sorcery";
+            if (typeLine.Contains("Enchantment")) return "Enchantment";
+            if (typeLine.Contains("Artifact")) return "Artifact";
+            if (typeLine.Contains("Planeswalker")) return "Planeswalker";
+            if (typeLine.Contains("Battle")) return "Battle";
 
-                if (card.TypeLine.Contains("Instant"))
-                    Increment(types, "Instant");
-
-                if (card.TypeLine.Contains("Sorcery"))
-                    Increment(types, "Sorcery");
-
-                if (card.TypeLine.Contains("Artifact"))
-                    Increment(types, "Artifact");
-
-                if (card.TypeLine.Contains("Enchantment"))
-                    Increment(types, "Enchantment");
-
-                if (card.TypeLine.Contains("Land"))
-                    Increment(types, "Land");
-            }
-
-            return types;
+            return "Other";
         }
 
-        private void Increment(Dictionary<string, int> dict, string key)
+        private ManaCurveChartDto BuildManaCurveByCreatureSplit(List<CardDto> cards)
         {
-            if (!dict.ContainsKey(key))
-                dict[key] = 0;
+            return BuildManaCurveBreakdown(cards, c =>
+                c.TypeLine.Contains("Creature") ? "Creature" : "Non-Creature");
+        }
 
-            dict[key]++;
+        private ManaCurveChartDto BuildManaCurveByCmc(List<CardDto> cards)
+        {
+            var filteredCards = cards
+                .Where(c => c.ConvertedManaCost.HasValue && !c.TypeLine.Contains("Land"))
+                .ToList();
+
+            var cmcCategories = filteredCards
+                .Select(c => (int)Math.Floor(c.ConvertedManaCost!.Value))
+                .Distinct()
+                .OrderBy(cmc => cmc)
+                .ToList();
+
+            return new ManaCurveChartDto
+            {
+                Categories = cmcCategories,
+                Series =
+                [
+                    new StackedSeriesDto
+            {
+                Name = "Cards",
+                Data = cmcCategories
+                    .Select(cmc => filteredCards.Count(c =>
+                        (int)Math.Floor(c.ConvertedManaCost!.Value) == cmc))
+                    .ToList()
+            }
+                ]
+            };
         }
     }
 }

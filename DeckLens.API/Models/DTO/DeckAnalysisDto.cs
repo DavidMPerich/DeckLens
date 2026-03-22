@@ -5,8 +5,6 @@ namespace DeckLens.API.Models.DTO
     public class DeckAnalysisDto
     {
         //Dashboard Metrics
-        public CardDto? Commander {  get; set; }
-        public int TotalCards { get; set; }
         public DeckSummaryDto Summary { get; set; } = new(); 
 
         //Metric Details
