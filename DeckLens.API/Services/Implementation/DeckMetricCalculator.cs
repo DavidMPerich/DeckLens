@@ -16,31 +16,31 @@ namespace DeckLens.API.Services.Implementation
 
             var dto = new DeckAnalysisDto();
 
-            //Summary
+            // Summary
             dto.Summary.Commander = cards[0];
             cards.RemoveAt(0);
             dto.Summary.TotalCards = cards.Count;
-            //dto.Summary.ManaCurvePreview = 
+            // dto.Summary.ManaCurvePreview =
 
-            /*****MANA CURVE*****/
-            //Metrics
+            /***** MANA CURVE *****/
+            // Metrics
             dto.ManaCurveAnalysis.Metrics.AverageCmc = CalculateAverageCmc(cards);
-            //dto.ManaCurveAnalysis.Metrics.MedianCmc = 
-            //dto.ManaCurveAnalysis.Metrics.CurvePeak =
-            //dto.ManaCurveAnalysis.Metrics.EarlyGameDensity =
+            // dto.ManaCurveAnalysis.Metrics.MedianCmc =
+            // dto.ManaCurveAnalysis.Metrics.CurvePeak =
+            // dto.ManaCurveAnalysis.Metrics.EarlyGameDensity =
 
-            //Chart Distributions
+            // Chart Distributions
             dto.ManaCurveAnalysis.Charts.ByCmc = BuildManaCurveByCmc(cards);
             dto.ManaCurveAnalysis.Charts.ByColor = BuildManaCurveByColor(cards);
             dto.ManaCurveAnalysis.Charts.ByType = BuildManaCurveByType(cards);
             dto.ManaCurveAnalysis.Charts.ByCreatureSplit = BuildManaCurveByCreatureSplit(cards);
 
-            //Insights
+            // Insights
 
             return dto;
         }
 
-        private double CalculateAverageCmc(List<CardDto> cards) 
+        private double CalculateAverageCmc(List<CardDto> cards)
         {
             var cmcList = cards
                 .Where(c => c.ConvertedManaCost.HasValue && !c.TypeLine.Contains("Land"))
@@ -50,7 +50,10 @@ namespace DeckLens.API.Services.Implementation
             return Math.Round(average, 1);
         }
 
-        private ManaCurveChartDto BuildManaCurveBreakdown(List<CardDto> cards, Func<CardDto, string> bucketSelector)
+        private ManaCurveChartDto BuildManaCurveBreakdown(
+            List<CardDto> cards,
+            List<string> orderedBuckets,
+            Func<CardDto, string> bucketSelector)
         {
             var filteredCards = cards
                 .Where(c => c.ConvertedManaCost.HasValue && !c.TypeLine.Contains("Land"))
@@ -62,13 +65,7 @@ namespace DeckLens.API.Services.Implementation
                 .OrderBy(cmc => cmc)
                 .ToList();
 
-            var bucketNames = filteredCards
-                .Select(bucketSelector)
-                .Distinct()
-                .OrderBy(x => x)
-                .ToList();
-
-            var series = bucketNames
+            var series = orderedBuckets
                 .Select(bucket => new StackedSeriesDto
                 {
                     Name = bucket,
@@ -78,6 +75,7 @@ namespace DeckLens.API.Services.Implementation
                             bucketSelector(c) == bucket))
                         .ToList()
                 })
+                .Where(s => s.Data.Any(value => value > 0))
                 .ToList();
 
             return new ManaCurveChartDto
@@ -89,7 +87,19 @@ namespace DeckLens.API.Services.Implementation
 
         private ManaCurveChartDto BuildManaCurveByColor(List<CardDto> cards)
         {
-            return BuildManaCurveBreakdown(cards, GetColorBucket);
+            return BuildManaCurveBreakdown(
+                cards,
+                new List<string>
+                {
+                "White",
+                "Blue",
+                "Black",
+                "Red",
+                "Green",
+                "Colorless",
+                "Multicolor"
+                },
+                GetColorBucket);
         }
 
         private string GetColorBucket(CardDto card)
@@ -113,7 +123,20 @@ namespace DeckLens.API.Services.Implementation
 
         private ManaCurveChartDto BuildManaCurveByType(List<CardDto> cards)
         {
-            return BuildManaCurveBreakdown(cards, GetPrimaryTypeBucket);
+            return BuildManaCurveBreakdown(
+                cards,
+               new List<string>
+                {
+                    "Creature",
+                    "Instant",
+                    "Sorcery",
+                    "Artifact",
+                    "Battle",
+                    "Planeswalker",
+                    "Enchantment",
+                    "Other"
+                },
+                GetPrimaryTypeBucket);
         }
 
         private string GetPrimaryTypeBucket(CardDto card)
@@ -133,8 +156,21 @@ namespace DeckLens.API.Services.Implementation
 
         private ManaCurveChartDto BuildManaCurveByCreatureSplit(List<CardDto> cards)
         {
-            return BuildManaCurveBreakdown(cards, c =>
-                c.TypeLine.Contains("Creature") ? "Creature" : "Non-Creature");
+            return BuildManaCurveBreakdown(
+                cards,
+                new List<string>
+                {
+                "Creature",
+                "Non-Creature"
+                },
+                GetCreatureSplitBucket);
+        }
+
+        private string GetCreatureSplitBucket(CardDto card)
+        {
+            return card.TypeLine.Contains("Creature")
+                ? "Creature"
+                : "Non-Creature";
         }
 
         private ManaCurveChartDto BuildManaCurveByCmc(List<CardDto> cards)
@@ -155,13 +191,13 @@ namespace DeckLens.API.Services.Implementation
                 Series =
                 [
                     new StackedSeriesDto
-            {
-                Name = "Cards",
-                Data = cmcCategories
-                    .Select(cmc => filteredCards.Count(c =>
-                        (int)Math.Floor(c.ConvertedManaCost!.Value) == cmc))
-                    .ToList()
-            }
+                {
+                    Name = "Cards",
+                    Data = cmcCategories
+                        .Select(cmc => filteredCards.Count(c =>
+                            (int)Math.Floor(c.ConvertedManaCost!.Value) == cmc))
+                        .ToList()
+                }
                 ]
             };
         }
